@@ -10,15 +10,44 @@ params:
 ---
 
 ```{r setup, include=FALSE}
+if(!require(checkpoint)){
+  install.packages("checkpoint")
+  library(checkpoint)
+}
+checkpoint("2021-05-05", scanForPackages = F)
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 knitr::opts_knit$set(root.dir = here::here())
 ```
 
 ```{r preamble, include=FALSE}
-library(tidyverse)
-library(rstan)
-library(doMC)
-library(gridExtra)
+if(!require(tidyverse)){
+  install.packages("tidyverse")
+  library(tidyverse)
+}
+if(!require(rstan)){
+  install.packages("rstan")
+  library(rstan)
+}
+if(!require(doMC)){
+  install.packages("doMC")
+  library(doMC)
+}
+if(!require(gridExtra)){
+  install.packages("gridExtra")
+  library(gridExtra)
+}
+if(!require(loo)){
+  install.packages("loo")
+  library(loo)
+}
+if(!require(parallel)){
+  install.packages("parallel")
+  library(parallel)
+}
+if(!require(doParallel)){
+  install.packages("doParallel")
+  library(doParallel)
+}
 
 source("scripts/utils.R")
 
@@ -26,6 +55,9 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2"
 
 ## age cuts
 age_cuts <- c(0, 9, 20, 40, 60, 125)
+
+## names of RHAs
+RHA_names <- c(“WRHA”, “PMA”, “IEHA”, “NHRA”, “SHRA”)
 
 ## Stan/JAGS settings, don't need to change
 options(mc.cores = parallel::detectCores()-2) ## use all cores but two for this
@@ -102,7 +134,8 @@ gva_ages <- read_csv("data/manitoba_age_2019.csv") %>%
 ## read and fix serology data
 sero_dat <- read_csv("generated_data/manitoba_pop_data_fake.csv") %>%
   rename(household_id = new_household_id) %>% 
-  mutate(age_cat = cut(age, age_cuts, right = F)) %>%
+  mutate(age_cat = cut(age, age_cuts, right = F),
+          rha_name = RHA_names[rha]) %>%
   group_by(household_id) %>%
   mutate(
     hh_obs = n(),
@@ -146,7 +179,7 @@ gva_age_cats <- gva_ages %>%
     expand_grid(
       week = unique(sero_dat$week),
       Sex = 0:1,
-      rha = 1:5
+      rha_name = RHA_names
     )
   ) %>%
   arrange(week)
@@ -185,7 +218,8 @@ primary_age_cats <- gva_ages %>%
   full_join(
     expand_grid(
       week = unique(primary_dat$week),
-      Sex = 0:1
+      Sex = 0:1,
+      rha_name = RHA_names
     )
   ) %>%
   arrange(week) %>%
@@ -266,7 +300,7 @@ if (!file.exists(out_est_file) | params$redo) {
     model_script = "stan/serosurvey-analysis-re.stan",
     dat = sero_dat,
     analysis = "ei",
-    coef_eqn = "Sex + age_cat + week + rha",
+    coef_eqn = "Sex + age_cat + week + rha_name",
     pos_control = pos_control,
     neg_control = neg_control,
     control_tp = control_tp_hi,
