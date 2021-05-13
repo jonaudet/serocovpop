@@ -145,10 +145,15 @@ gva_age_cats <- gva_ages %>%
   full_join(
     expand_grid(
       week = unique(sero_dat$week),
-      Sex = 0:1
+      Sex = 0:1,
+      rha = 1:5
     )
   ) %>%
   arrange(week)
+
+n_gva_age_cats <- nrow(gva_age_cats)
+
+gva_age_cats <- bind_rows(gva_age_cats, gva_age_cats)
 
 ## only the primary member of the household
 primary_dat <- sero_dat %>%
