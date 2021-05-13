@@ -48,7 +48,7 @@ generated quantities {
   vector[N_survey] log_lik;
 
     for(i in 1:N_survey){
-      log_lik[i] = bernoulli_logit_lpmf(survey_pos[i] | p[i]*sens+(1-p[i])*(1-spec));
+      log_lik[i] = bernoulli_lpmf(survey_pos[i] | p[i]*sens+(1-p[i])*(1-spec));
     }
 
 }
