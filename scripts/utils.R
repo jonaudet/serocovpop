@@ -163,6 +163,8 @@ run_analysis_stan_re <- function(model_script,
             Sex = pop_age_cats$Sex[i],
             week = pop_age_cats$week[i],
             pop = pop_age_cats$pop[i],
+            rha = pop_age_cats$rha[i],
+            rha_name = pop_age_cats$rha_name[i],
             seropos = output
       ) %>%
       mutate(sim = 1:n()))
