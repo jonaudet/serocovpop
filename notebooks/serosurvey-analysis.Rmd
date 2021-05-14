@@ -57,7 +57,7 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2"
 age_cuts <- c(0, 9, 20, 40, 60, 125)
 
 ## names of RHAs
-RHA_names <- c(“WRHA”, “PMA”, “IEHA”, “NHRA”, “SHRA”)
+RHA_names <- c("WRHA", "PMA", "IEHA", "NHRA", "SHRA")
 
 ## Stan/JAGS settings, don't need to change
 options(mc.cores = parallel::detectCores()-2) ## use all cores but two for this
