@@ -111,6 +111,7 @@ run_analysis_stan_re <- function(model_script,
                            control_fp = control_fp
                          ),
                          chains = chains,
+                         sample_file = "diag",
                          iter = iter,
                          warmup = warmup,
                          control = control)
