@@ -168,27 +168,6 @@ run_analysis_stan_re <- function(model_script,
             seropos = output
       ) %>%
       mutate(sim = 1:n()))
-      # foreach(j = 1:nrow(beta),
-      #         .combine = rbind,
-      #         .inorder = T) %do%
-      #   {
-      #     # Compute probability integrating across in household random effects
-      #     prob <- integrate(function(x) {
-      #       plogis(qnorm(
-      #         x, beta[j, , drop = F] %*% t(pop_cat_mat[i, , drop = F]),
-      #         sigma[j]
-      #       ))
-      #     }, 0, 1)[[1]]
-
-      #     tibble(
-      #       age_cat = pop_age_cats$age_cat[i],
-      #       Sex = pop_age_cats$Sex[i],
-      #       week = pop_age_cats$week[i],
-      #       pop = pop_age_cats$pop[i],
-      #       seropos = prob
-      #     ) %>%
-      #       mutate(sim = j)
-      #   }
     }
   parallel::stopCluster(cl)
 
