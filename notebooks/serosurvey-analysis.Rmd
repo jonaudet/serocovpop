@@ -15,6 +15,7 @@ if(!require(checkpoint)){
   library(checkpoint)
 }
 checkpoint("2021-05-05", scanForPackages = F)
+setSnapshot("2021-05-05")
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 knitr::opts_knit$set(root.dir = here::here())
 ```
@@ -47,6 +48,14 @@ if(!require(parallel)){
 if(!require(doParallel)){
   install.packages("doParallel")
   library(doParallel)
+}
+if(!require(icenReg)){
+  install.packages("icenReg")
+  library(icenReg)
+}
+if(!require(viridis)){
+  install.packages("viridis")
+  library(virisdis)
 }
 
 source("scripts/utils.R")

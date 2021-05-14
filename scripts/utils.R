@@ -121,9 +121,8 @@ run_analysis_stan_re <- function(model_script,
     cat("Loading pre-computed posteriors from ", stan_out_file, "\n")
     stan_est <- readRDS(stan_out_file)
   }
-
   ## extract log-likelihoods
-  stan_ll <- loo::extract_log_lik(stan_est) %>% loo::loo()
+  stan_ll <- stan_est %>% loo::loo()
 
   ## extract parameters
   beta <- extract(stan_est, pars = "beta")[[1]]
@@ -142,7 +141,7 @@ run_analysis_stan_re <- function(model_script,
   #doParallel::registerDoParallel(n_cores)
 
   pop_cat_p <- foreach(i = 1:nrow(pop_cat_mat),
-                       .combine = rbind,
+                       .combine = bind_rows,
                        .inorder = F,
                        .packages = c("tidyverse", "foreach")) %dopar%
     {
@@ -204,6 +203,15 @@ run_analysis_stan_re <- function(model_script,
     filter(age_cat == age_ref, week == wk_ref) %>%
     mutate(var = "Sex") %>%
     rename(val = Sex) %>%
+    group_by(sim, var, val) %>%
+    summarize(p = weighted.mean(seropos, pop)) %>%
+    ungroup()
+
+  # RHA-specific probabilities
+  rha_re <- pop_cat_p %>%
+    filter(age_cat == age_ref, week == wk_ref) %>%
+    mutate(var = "RHA") %>%
+    rename(val = rha_name) %>%
     group_by(sim, var, val) %>%
     summarize(p = weighted.mean(seropos, pop)) %>%
     ungroup()
