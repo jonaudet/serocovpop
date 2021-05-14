@@ -128,40 +128,64 @@ run_analysis_stan_re <- function(model_script,
   beta <- extract(stan_est, pars = "beta")[[1]]
   sigma <- extract(stan_est, pars = "sigma_h")[[1]]
 
+  post_mat <- cbind(beta, sigma)
+
   pop_cat_mat <- pop_age_cats %>%
     model.matrix(as.formula(paste("~", coef_eqn)), data = .)
 
   ## compute estimates by age category
+  #Parallel for MacOS
   cl <- parallel::makeCluster(n_cores)
   doParallel::registerDoParallel(cl)
+  #Parallel for Linux
+  #doParallel::registerDoParallel(n_cores)
 
   pop_cat_p <- foreach(i = 1:nrow(pop_cat_mat),
                        .combine = rbind,
                        .inorder = F,
                        .packages = c("tidyverse", "foreach")) %dopar%
     {
-      foreach(j = 1:nrow(beta),
-              .combine = rbind,
-              .inorder = T) %do%
-        {
+      N_rows <- nrow(beta)
+      N_preds <- ncol(beta)
 
-          # Compute probability integrating across in household random effects
-          prob <- integrate(function(x) {
+      output <- apply(as.array(post_mat), 1, function(posterior){
+        integrate(function(x) {
             plogis(qnorm(
-              x, beta[j, , drop = F] %*% t(pop_cat_mat[i, , drop = F]),
-              sigma[j]
+              x, posterior[1:N_preds, drop = F] %*% t(pop_cat_mat[i, , drop = F]),
+              posterior[N_preds + 1]
             ))
           }, 0, 1)[[1]]
+      })
 
-          tibble(
+      return(tibble(
             age_cat = pop_age_cats$age_cat[i],
             Sex = pop_age_cats$Sex[i],
             week = pop_age_cats$week[i],
             pop = pop_age_cats$pop[i],
-            seropos = prob
-          ) %>%
-            mutate(sim = j)
-        }
+            seropos = output
+      ) %>%
+      mutate(sim = 1:n()))
+      # foreach(j = 1:nrow(beta),
+      #         .combine = rbind,
+      #         .inorder = T) %do%
+      #   {
+      #     # Compute probability integrating across in household random effects
+      #     prob <- integrate(function(x) {
+      #       plogis(qnorm(
+      #         x, beta[j, , drop = F] %*% t(pop_cat_mat[i, , drop = F]),
+      #         sigma[j]
+      #       ))
+      #     }, 0, 1)[[1]]
+
+      #     tibble(
+      #       age_cat = pop_age_cats$age_cat[i],
+      #       Sex = pop_age_cats$Sex[i],
+      #       week = pop_age_cats$week[i],
+      #       pop = pop_age_cats$pop[i],
+      #       seropos = prob
+      #     ) %>%
+      #       mutate(sim = j)
+      #   }
     }
   parallel::stopCluster(cl)
 
