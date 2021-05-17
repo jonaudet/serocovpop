@@ -55,7 +55,7 @@ if(!require(icenReg)){
 }
 if(!require(viridis)){
   install.packages("viridis")
-  library(virisdis)
+  library(viridis)
 }
 
 source("scripts/utils.R")
