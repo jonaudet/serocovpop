@@ -191,10 +191,11 @@ gva_age_cats <- gva_ages %>%
     expand_grid(
       week = unique(sero_dat$week),
       Sex = 0:1,
-      rha_name = RHA_names
+      rha = 1:5
     )
   ) %>%
-  arrange(week)
+  arrange(week) %>%
+  mutate(rha_name = RHA_names[rha])
 
 n_gva_age_cats <- nrow(gva_age_cats)
 
@@ -231,11 +232,12 @@ primary_age_cats <- gva_ages %>%
     expand_grid(
       week = unique(primary_dat$week),
       Sex = 0:1,
-      rha_name = RHA_names
+      rha = 1:5
     )
   ) %>%
   arrange(week) %>%
-  droplevels()
+  droplevels() %>%
+  mutate(rha_name = RHA_names[rha])
 
 ## set factor levels to reference levels in data
 sero_dat$Sex <- relevel(as.factor(sero_dat$Sex), sex_ref)

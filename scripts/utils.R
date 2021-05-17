@@ -157,7 +157,7 @@ run_analysis_stan_re <- function(model_script,
           }, 0, 1)[[1]]
       })
 
-      return(tibble(
+      out <- tibble(
             age_cat = pop_age_cats$age_cat[i],
             Sex = pop_age_cats$Sex[i],
             week = pop_age_cats$week[i],
@@ -166,7 +166,9 @@ run_analysis_stan_re <- function(model_script,
             rha_name = pop_age_cats$rha_name[i],
             seropos = output
       ) %>%
-      mutate(sim = 1:n()))
+      mutate(sim = 1:n())
+      validate_tibble(out)
+      return(out)
     }
   parallel::stopCluster(cl)
 
