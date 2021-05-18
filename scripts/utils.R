@@ -235,7 +235,8 @@ run_analysis_stan_re <- function(model_script,
       overall_re,
       wk_re,
       sex_re,
-      age_re
+      age_re,
+      rha_re
     )
   )
 

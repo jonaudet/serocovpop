@@ -57,6 +57,10 @@ if(!require(viridis)){
   install.packages("viridis")
   library(viridis)
 }
+if(!require(devtools)){
+  install.packages("devtools")
+  library(devtools)
+}
 
 source("scripts/utils.R")
 
@@ -544,4 +548,4 @@ We find that for every confirmed case we have `r round((sum(gva_pop$total)*.108)
 
 ```{r}
 sessionInfo()
--```
+```
