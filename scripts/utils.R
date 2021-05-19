@@ -82,7 +82,7 @@ run_analysis_stan_re <- function(model_script,
   }
 
   # Set model matrix
-  X <- model.matrix(as.formula(paste("~", coef_eqn)), data = ana_dat)
+  X <- model.matrix(as.formula(paste("~", coef_eqn, " - 1")), data = ana_dat)
 
   # name of the stan output file
   if (!dir.exists('results')) {dir.create('results')}
@@ -101,14 +101,17 @@ run_analysis_stan_re <- function(model_script,
                          data = list(
                            N_survey = nrow(ana_dat),
                            H = length(u_hh_ids),
+                           R = max(sero_dat$rha),
                            hh = ana_dat$u_household_id,
                            p_vars = ncol(X),
                            X = X,
+                           time_point = sero_dat$time_point,
                            survey_pos = ana_dat$pos,
                            N_pos_control = pos_control,
                            control_tp = control_tp,
                            N_neg_control = neg_control,
-                           control_fp = control_fp
+                           control_fp = control_fp,
+                           rha = sero_dat$rha
                          ),
                          chains = chains,
                          sample_file = "diag",
@@ -127,11 +130,17 @@ run_analysis_stan_re <- function(model_script,
   ## extract parameters
   beta <- extract(stan_est, pars = "beta")[[1]]
   sigma <- extract(stan_est, pars = "sigma_h")[[1]]
+  sigmas_timepoints <- extract(stan_est, pars = "sigma_t")$sigma_t
+  
+  z_timepoints <- extract(stan_est, pars = "eta_t")$eta_t
+  n_timepoints <- dim(z_timepoints)[2]
 
-  post_mat <- cbind(beta, sigma)
+  post_mat <- cbind(beta, sigma, sigmas_timepoints)
 
   pop_cat_mat <- pop_age_cats %>%
-    model.matrix(as.formula(paste("~", coef_eqn)), data = .)
+    model.matrix(as.formula(paste("~", coef_eqn, " - 1")), data = .)
+  
+  pop_cat_mat <- cbind(pop_cat_mat, pop_age_cats$week, pop_age_cats$rha)
 
   ## compute estimates by age category
   #Parallel for MacOS

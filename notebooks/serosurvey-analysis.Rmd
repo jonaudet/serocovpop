@@ -78,8 +78,8 @@ if(!exists("params"))
 ## Stan/JAGS settings, don't need to change
 options(mc.cores = parallel::detectCores()-2) ## use all cores but two for this
 n_chains <- 4
-n_iter <- 1500
-n_warmup <- 250
+n_iter <- 5500
+n_warmup <- 500
 p_delta <- 0.99
 n_treedepth <- 20
 
@@ -319,27 +319,6 @@ sero_dat %>%
 
 sero_dat <- mutate(sero_dat,
                     time_point = as.numeric(week))
-model <- stan_model("stan/serosurvey-analysis-re.stan")
-
-X <- model.matrix(~Sex + age_cat, data = sero_dat)
-
-result <- sampling(model, data = list(N_survey = nrow(sero_dat),
-                                      H = max(sero_dat$household_id),
-                                      R = max(sero_dat$rha),
-                                      survey_pos = sero_dat$pos,
-                                      hh = sero_dat$household_id,
-                                      p_vars = ncol(X),
-                                      n_time = max(sero_dat$time_point),
-                                      X = X,
-                                      time_point = sero_dat$time_point,
-                                      N_pos_control = pos_control,
-                                      control_tp = control_tp_hi,
-                                      N_neg_control = neg_control,
-                                      control_fp = control_fp_hi,
-                                      rha = sero_dat$rha),
-                    warmup = 500, iter = 2500, refresh = 100,
-                    chains = 4, cores = 4, sample_file = "diag",
-                    control = list(adapt_delta = 0.99, max_treedepth = 20))
 
 if (!file.exists(out_est_file) | params$redo) {
   ## model the overall seropositivity with a random effect for household
@@ -347,7 +326,7 @@ if (!file.exists(out_est_file) | params$redo) {
     model_script = "stan/serosurvey-analysis-re.stan",
     dat = sero_dat,
     analysis = "ei",
-    coef_eqn = "Sex + age_cat + week + rha_name",
+    coef_eqn = "Sex + age_cat",
     pos_control = pos_control,
     neg_control = neg_control,
     control_tp = control_tp_hi,
