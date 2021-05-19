@@ -249,19 +249,15 @@ primary_age_cats <- gva_ages %>%
 sero_dat$Sex <- relevel(as.factor(sero_dat$Sex), sex_ref)
 sero_dat$age_cat <- relevel(sero_dat$age_cat, age_ref)
 sero_dat$week <- relevel(as.factor(sero_dat$week), wk_ref)
-sero_dat$rha_name <- relevel(factor(sero_dat$rha_name), rha_name_ref)
 gva_age_cats$Sex <- relevel(as.factor(gva_age_cats$Sex), sex_ref)
 gva_age_cats$age_cat <- relevel(gva_age_cats$age_cat, age_ref)
 gva_age_cats$week <- relevel(as.factor(gva_age_cats$week), wk_ref)
-gva_age_cats$rha_name <- relevel(factor(gva_age_cats$rha_name), rha_name_ref)
 primary_dat$Sex <- relevel(as.factor(primary_dat$Sex), sex_ref)
 primary_dat$age_cat <- relevel(primary_dat$age_cat, age_ref)
 primary_dat$week <- relevel(as.factor(primary_dat$week), wk_ref)
-primary_dat$rha_name <- relevel(as.factor(primary_dat$rha_name), rha_name_ref)
 primary_age_cats$Sex <- relevel(as.factor(primary_age_cats$Sex), sex_ref)
 primary_age_cats$age_cat <- relevel(primary_age_cats$age_cat, age_ref)
 primary_age_cats$week <- relevel(as.factor(primary_age_cats$week), wk_ref)
-primary_age_cats$rha_name <- relevel(as.factor(primary_age_cats$rha_name), rha_name_ref)
 
 hh_dat <- sero_dat %>% 
   group_by(household_id) %>% 
