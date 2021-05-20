@@ -60,6 +60,7 @@ run_analysis_stan_re <- function(model_script,
                                  sex_ref = 0,
                                  age_ref = "[20,40)",
                                  wk_ref = "2",
+                                 rha_name_ref = "WRHA",
                                  redo = F,
                                  chains,
                                  iter,
@@ -82,7 +83,7 @@ run_analysis_stan_re <- function(model_script,
   }
 
   # Set model matrix
-  X <- model.matrix(as.formula(paste("~", coef_eqn, " - 1")), data = ana_dat)
+  X <- model.matrix(as.formula(paste("~", coef_eqn)), data = ana_dat)
 
   # name of the stan output file
   if (!dir.exists('results')) {dir.create('results')}
@@ -101,6 +102,7 @@ run_analysis_stan_re <- function(model_script,
                          data = list(
                            N_survey = nrow(ana_dat),
                            H = length(u_hh_ids),
+                           n_time = max(sero_dat$time_point),
                            R = max(sero_dat$rha),
                            hh = ana_dat$u_household_id,
                            p_vars = ncol(X),
@@ -117,7 +119,8 @@ run_analysis_stan_re <- function(model_script,
                          sample_file = "diag",
                          iter = iter,
                          warmup = warmup,
-                         control = control)
+                         control = control,
+                         refresh = 100)
 
     saveRDS(stan_est, stan_out_file)
   } else {
@@ -138,9 +141,11 @@ run_analysis_stan_re <- function(model_script,
   post_mat <- cbind(beta, sigma, sigmas_timepoints)
 
   pop_cat_mat <- pop_age_cats %>%
-    model.matrix(as.formula(paste("~", coef_eqn, " - 1")), data = .)
+    model.matrix(as.formula(paste("~", coef_eqn)), data = .)
+
   
-  pop_cat_mat <- cbind(pop_cat_mat, pop_age_cats$week, pop_age_cats$rha)
+  N_rows <- nrow(beta)
+  N_preds <- ncol(beta)
 
   ## compute estimates by age category
   #Parallel for MacOS
@@ -149,19 +154,18 @@ run_analysis_stan_re <- function(model_script,
   #Parallel for Linux
   #doParallel::registerDoParallel(n_cores)
 
-  pop_cat_p <- foreach(i = 1:nrow(pop_cat_mat),
+    pop_cat_p <- foreach(i = 1:nrow(pop_cat_mat),
                        .combine = bind_rows,
                        .inorder = F,
                        .packages = c("tidyverse", "foreach")) %dopar%
     {
-      N_rows <- nrow(beta)
-      N_preds <- ncol(beta)
-
-      output <- apply(as.array(post_mat), 1, function(posterior){
+      
+      output <- apply(as.array(1:N_rows), 1, function(posterior){
         integrate(function(x) {
             plogis(qnorm(
-              x, posterior[1:N_preds, drop = F] %*% t(pop_cat_mat[i, , drop = F]),
-              posterior[N_preds + 1]
+              x, post_mat[posterior, 1:N_preds, drop = F] %*% t(pop_cat_mat[i, 1:N_preds, drop = F]) +
+               post_mat[posterior, N_preds + 2, drop = F] * z_timepoints[posterior, pop_age_cats$week[i], pop_age_cats$rha[i]],
+              post_mat[posterior, N_preds + 1]
             ))
           }, 0, 1)[[1]]
       })
@@ -200,9 +204,17 @@ run_analysis_stan_re <- function(model_script,
     summarize(p = weighted.mean(seropos, pop)) %>%
     ungroup()
 
+  # weekly estimates by rha
+  wk_rha_re <- pop_cat_p %>%
+    mutate(var = "Week_RHA") %>%
+    rename(val = week) %>%
+    group_by(rha_name, rha, sim, var, val) %>%
+    summarize(p = weighted.mean(seropos, pop)) %>%
+    ungroup()
+
   ## find age specific probabilities in order to make relative risks
   age_re <- pop_cat_p %>%
-    filter(Sex == sex_ref, week == wk_ref) %>%
+    filter(Sex == sex_ref, week == wk_ref, rha_name == rha_name_ref) %>%
     mutate(var = "Age") %>%
     rename(val = age_cat) %>%
     group_by(sim, var, val) %>%
@@ -211,7 +223,7 @@ run_analysis_stan_re <- function(model_script,
 
   # sex-specific probabilities
   sex_re <- pop_cat_p %>%
-    filter(age_cat == age_ref, week == wk_ref) %>%
+    filter(age_cat == age_ref, week == wk_ref, rha_name == rha_name_ref) %>%
     mutate(var = "Sex") %>%
     rename(val = Sex) %>%
     group_by(sim, var, val) %>%
@@ -243,6 +255,7 @@ run_analysis_stan_re <- function(model_script,
     subset_est = bind_rows(
       overall_re,
       wk_re,
+      wk_rha_re,
       sex_re,
       age_re,
       rha_re
