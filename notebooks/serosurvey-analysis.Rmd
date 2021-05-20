@@ -248,16 +248,12 @@ primary_age_cats <- gva_ages %>%
 ## set factor levels to reference levels in data
 sero_dat$Sex <- relevel(as.factor(sero_dat$Sex), sex_ref)
 sero_dat$age_cat <- relevel(sero_dat$age_cat, age_ref)
-sero_dat$week <- relevel(as.factor(sero_dat$week), wk_ref)
 gva_age_cats$Sex <- relevel(as.factor(gva_age_cats$Sex), sex_ref)
 gva_age_cats$age_cat <- relevel(gva_age_cats$age_cat, age_ref)
-gva_age_cats$week <- relevel(as.factor(gva_age_cats$week), wk_ref)
 primary_dat$Sex <- relevel(as.factor(primary_dat$Sex), sex_ref)
 primary_dat$age_cat <- relevel(primary_dat$age_cat, age_ref)
-primary_dat$week <- relevel(as.factor(primary_dat$week), wk_ref)
 primary_age_cats$Sex <- relevel(as.factor(primary_age_cats$Sex), sex_ref)
 primary_age_cats$age_cat <- relevel(primary_age_cats$age_cat, age_ref)
-primary_age_cats$week <- relevel(as.factor(primary_age_cats$week), wk_ref)
 
 hh_dat <- sero_dat %>% 
   group_by(household_id) %>% 
@@ -360,7 +356,6 @@ nrow(hh_dat)
 "Seroprevalence by week"
 subset_est %>%
   filter(var == "Week") %>%
-  mutate(week = as.factor(as.numeric(val))) %>%
   group_by(sim) %>%
   mutate(coef_val = ifelse(week == 2, NA,
     ifelse(p > p[week == 2], 1, -1)
@@ -405,6 +400,54 @@ subset_est %>%
     caption = "Seroprevalence by week",
     booktabs = T, linesep = ""
   )
+
+subset_est %>%
+  filter(var == "Week_RHA") %>%
+  group_by(sim, rha_name) %>%
+  mutate(coef_val = ifelse(week == 2, NA,
+    ifelse(p > p[week == 2], 1, -1)
+  )) %>%
+  ungroup() %>%
+  # mutate(week=relevel(val,"1")) %>%
+  left_join(sero_dat %>%
+    group_by(week, rha_name) %>%
+    summarize(
+      n = n(),
+      pos = sum(pos),
+      neg = sum(neg),
+      ind = sum(ind)
+    )) %>%
+  group_by(week, rha_name, n, pos, neg, ind) %>%
+  summarize(
+    `Seroprevalence (95% CI)` = paste0(
+      mean(100 * p) %>%
+        formatC(2, format = "f"), " (",
+      quantile(100 * p, probs = .025) %>%
+        formatC(2, format = "f"), "-",
+      quantile(100 * p, probs = .975) %>%
+        formatC(2, format = "f"), ")"
+    ),
+    p = ifelse(is.na(mean(coef_val)), "--",
+      min(2 * c(mean(coef_val > 0), mean(coef_val < 0))) %>%
+        formatC(4, format = "f")
+    )
+  ) %>%
+  ungroup() %>%
+  mutate(
+    pos = paste0(pos, " (", formatC(100 * pos / n, 2, format = "f"), "%)"),
+    neg = paste0(neg, " (", formatC(100 * neg / n, 2, format = "f"), "%)"),
+    ind = paste0(ind, " (", formatC(100 * ind / n, 2, format = "f"), "%)")
+  ) %>%
+  rename(
+    Week = week, RHA = rha_name, Obs = n, `Test positive` = pos, `Test negative` = neg,
+    `Indeterminate` = ind
+  ) %>%
+  knitr::kable(
+    align = c("lcccccc"),
+    caption = "Seroprevalence by week by RHA",
+    booktabs = T, linesep = ""
+  )
+
 
 "Relative risks"
 subset_est %>%
