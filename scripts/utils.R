@@ -193,7 +193,7 @@ run_analysis_stan_re <- function(model_script,
 
   ## find age specific probabilities in order to make relative risks
   age_re <- pop_cat_p %>%
-    filter(Sex == sex_ref, week == wk_ref) %>%
+    filter(Sex == sex_ref, week == wk_ref, rha_name == rha_name_ref) %>%
     mutate(var = "Age") %>%
     rename(val = age_cat) %>%
     group_by(sim, var, val) %>%
@@ -202,7 +202,7 @@ run_analysis_stan_re <- function(model_script,
 
   # sex-specific probabilities
   sex_re <- pop_cat_p %>%
-    filter(age_cat == age_ref, week == wk_ref) %>%
+    filter(age_cat == age_ref, week == wk_ref, rha_name == rha_name_ref) %>%
     mutate(var = "Sex") %>%
     rename(val = Sex) %>%
     group_by(sim, var, val) %>%
