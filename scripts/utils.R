@@ -134,7 +134,7 @@ run_analysis_stan_re <- function(model_script,
   beta <- extract(stan_est, pars = "beta")[[1]]
   sigma <- extract(stan_est, pars = "sigma_h")[[1]]
   sigmas_timepoints <- extract(stan_est, pars = "sigma_t")$sigma_t
-  
+  means_t <- extract(stan_est, pars = "means_t")$means_t
   z_timepoints <- extract(stan_est, pars = "eta_t")$eta_t
   n_timepoints <- dim(z_timepoints)[2]
 
@@ -164,6 +164,7 @@ run_analysis_stan_re <- function(model_script,
         integrate(function(x) {
             plogis(qnorm(
               x, post_mat[posterior, 1:N_preds, drop = F] %*% t(pop_cat_mat[i, 1:N_preds, drop = F]) +
+               means_t[posterior, pop_age_cats$week[i]] +
                post_mat[posterior, N_preds + 2, drop = F] * z_timepoints[posterior, pop_age_cats$week[i], pop_age_cats$rha[i]],
               post_mat[posterior, N_preds + 1]
             ))

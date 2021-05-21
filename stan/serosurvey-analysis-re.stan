@@ -29,6 +29,7 @@ parameters {
     vector[H] eta_h; // standard normals for the household random effect
     vector<lower = 0>[n_time] sigma_t; //variability of each time period across RHAs
     matrix[n_time, R] eta_t; //standard normals for the RHA x time effects
+    vector[n_time] means_t; // mean for each time point, around which the RHAs are centered
     // real<lower=0> sigma_i;
     // vector[N_survey] eta_i;
 }
@@ -39,7 +40,7 @@ transformed parameters {
   matrix[R, n_time] time_coeffs = (rep_matrix(sigma_t, R) .* eta_t)';
   vector[N_survey] time_effects;
   for(i in 1:N_survey)
-    time_effects[i] = time_coeffs[rha[i], time_point[i]];
+    time_effects[i] = means_t[time_point[i]] + time_coeffs[rha[i], time_point[i]];
   p = inv_logit(X * beta + time_effects + sigma_h*eta_h[hh]);
 }
 }
@@ -55,6 +56,7 @@ model {
     for(i in 1:n_time)
       to_vector(eta_t[i, ]) ~ std_normal();
     sigma_t ~ std_normal();
+    means_t ~ normal(0, 2);
 
     beta ~ std_normal(); // priors for coefficients
 }
