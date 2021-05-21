@@ -6,7 +6,7 @@ output:
   pdf_document: default
   word_document: default
 params:
-  redo: FALSE
+  redo: TRUE
 ---
 
 ```{r setup, include=FALSE}
@@ -318,7 +318,7 @@ if (!file.exists(out_est_file) | params$redo) {
     model_script = "stan/serosurvey-analysis-re.stan",
     dat = sero_dat,
     analysis = "ei",
-    coef_eqn = "Sex + age_cat",
+    coef_eqn = "Sex + age_cat - 1",
     pos_control = pos_control,
     neg_control = neg_control,
     control_tp = control_tp_hi,
@@ -357,7 +357,8 @@ nrow(hh_dat)
 subset_est %>%
   filter(var == "Week") %>%
   group_by(sim) %>%
-  mutate(coef_val = ifelse(week == 2, NA,
+  mutate(week = as.numeric(val),
+         coef_val = ifelse(week == 2, NA,
     ifelse(p > p[week == 2], 1, -1)
   )) %>%
   ungroup() %>%
@@ -403,9 +404,10 @@ subset_est %>%
 
 subset_est %>%
   filter(var == "Week_RHA") %>%
-  group_by(sim, rha_name) %>%
-  mutate(coef_val = ifelse(week == 2, NA,
-    ifelse(p > p[week == 2], 1, -1)
+  separate(val, c("week", "rha_name"), convert = T) %>%
+  group_by(sim) %>%
+  mutate(coef_val = ifelse(week == 2 & rha_name == "WRHA", NA,
+    ifelse(p > p[week == 2 & (rha_name == "WRHA")], 1, -1)
   )) %>%
   ungroup() %>%
   # mutate(week=relevel(val,"1")) %>%
@@ -534,10 +536,9 @@ subset_est %>%
 
 ## Estimate the time of seroconversion and the ratio of infections to reported confirmed cases
 
-To estimate the ratio of implied infections (seroprevalence) to the number of clinically confirmed cases we used the daily number of confirmed COVID-19 cases from the Canton of Geneva ([https://github.com/openZH/covid_19](https://github.com/openZH/covid_19)) and adjusted this time series by an assumed times from symptom onset to test result and from symptom onset to seroconversion. 
+To estimate the ratio of implied infections (seroprevalence) to the number of clinically confirmed cases we used the daily number of confirmed COVID-19 cases from the Canton of Geneva ([https://github.com/openZH/covid_19](https://github.com/openZH/covid_19)) and adjusted this time series by an assumed times from symptom onset to test result and from symptom onset to seroconversion.
 
-
-```{r}
+```{r "survivalFit"}
 library(icenReg)
 lab_val_dat <- readr::read_csv("data/lab_validation_data.csv") %>% 
   mutate(pos = ifelse(pos=="POS",1,0),dps=as.numeric(dps)) %>%
@@ -555,12 +556,12 @@ fit_ln <- icenReg::ic_par(cbind(TL,TR) ~ 1, model = "aft",dist = "lnorm",data = 
 data.frame(fit_g$llk,fit_w$llk,fit_ln$llk)
 ```
 
-```{r}
+```{r "PlotBestFit"}
 plot(fit_ln,fun = "cdf",ylab="Proportion of cases seroconverted",xlab="days after symptom onset.")
 grid()
 ```
 
-```{r}
+```{r "PlotSeroConv"}
 library(viridis)
 
 ## assume mean of 6 days from symptom onset to reporting

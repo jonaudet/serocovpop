@@ -184,6 +184,7 @@ run_analysis_stan_re <- function(model_script,
       return(out)
     }
   parallel::stopCluster(cl)
+  #stopImplicitCluster()
 
   ## overall estimate
   overall_re <- pop_cat_p %>%
@@ -198,7 +199,8 @@ run_analysis_stan_re <- function(model_script,
 
   # weekyl estimates
   wk_re <- pop_cat_p %>%
-    mutate(var = "Week") %>%
+    mutate(var = "Week",
+            week = as.character(week)) %>%
     rename(val = week) %>%
     group_by(sim, var, val) %>%
     summarize(p = weighted.mean(seropos, pop)) %>%
@@ -206,9 +208,9 @@ run_analysis_stan_re <- function(model_script,
 
   # weekly estimates by rha
   wk_rha_re <- pop_cat_p %>%
-    mutate(var = "Week_RHA") %>%
-    rename(val = week) %>%
-    group_by(rha_name, rha, sim, var, val) %>%
+    mutate(var = "Week_RHA",
+           val = paste0(week, "_", rha_name)) %>%
+    group_by(sim, var, val) %>%
     summarize(p = weighted.mean(seropos, pop)) %>%
     ungroup()
 
