@@ -61,6 +61,10 @@ if(!require(devtools)){
   install.packages("devtools")
   library(devtools)
 }
+if(!require(cmdstanr)){
+  install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
+  library(cmdstanr)
+}
 
 source("scripts/utils.R")
 
