@@ -91,15 +91,15 @@ run_analysis_stan_re <- function(model_script,
 
   if (!file.exists(stan_out_file) | redo) {
 
-    set_cmdstan_path("C:/cmdstan/")
-    re_model <- cmdstan_model(model_script)
+    set_cmdstan_path("/home/user/cmdstan/")
+    re_model <- stan_model(model_script)
 
     # Unique household ids from 1 to N
     u_hh_ids <- unique(ana_dat$household_id)
     ana_dat$u_household_id <- map_dbl(ana_dat$household_id, ~which(u_hh_ids == .))
 
     # Run stan model
-    cmdstan_est <- re_model$sample(data = list(
+    stan_est <- sampling(re_model, data = list(
                            N_survey = nrow(ana_dat),
                            H = length(u_hh_ids),
                            n_time = max(sero_dat$time_point),
@@ -116,21 +116,20 @@ run_analysis_stan_re <- function(model_script,
                            rha = sero_dat$rha
                          ),
                          chains = chains,
-                         parallel_chains = chains,
-                         iter_sampling = iter - warmup,
-                         iter_warmup = warmup,
-                         adapt_delta = control[[1]],
-                         max_treedepth = control[[2]],
+                         iter = iter,
+                         warmup = warmup,
+                         control = list(adapt_delta = control[[1]],
+                         max_treedepth = control[[2]]),
                          refresh = 100)
 
-    stan_est <- rstan::read_stan_csv(cmdstan_est$output_files())
+    #stan_est <- rstan::read_stan_csv(cmdstan_est$output_files())
     saveRDS(stan_est, stan_out_file)
   } else {
     cat("Loading pre-computed posteriors from ", stan_out_file, "\n")
     stan_est <- readRDS(stan_out_file)
   }
   ## extract log-likelihoods
-  stan_ll <- stan_est %>% loo::loo()
+  stan_ll <- stan_est %>% loo::loo(moment_match = T, cores = 1)
 
   ## extract parameters
   beta <- extract(stan_est, pars = "beta")[[1]]
